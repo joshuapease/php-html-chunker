@@ -19,9 +19,10 @@ class HtmlChunker
         
         $chunks = [];
         $currentHeadings = [];
+        $hasH1 = false;
         
         // Traverse the DOM tree
-        self::traverseNode($dom->documentElement, $currentHeadings, $chunks);
+        self::traverseNode($dom->documentElement, $currentHeadings, $chunks, $hasH1);
         
         return $chunks;
     }
@@ -32,8 +33,9 @@ class HtmlChunker
      * @param \DOMNode $node The current DOM node
      * @param array $currentHeadings Array of current headings at each level
      * @param array &$chunks Reference to the chunks array to populate
+     * @param bool $hasH1 Whether we've seen an h1 element
      */
-    private static function traverseNode(\DOMNode $node, array &$currentHeadings, array &$chunks): void
+    private static function traverseNode(\DOMNode $node, array &$currentHeadings, array &$chunks, bool &$hasH1): void
     {
         if ($node->nodeType === XML_TEXT_NODE) {
             return; // Skip text nodes, we'll handle them in content elements
@@ -52,10 +54,23 @@ class HtmlChunker
             $headingText = self::extractTextContent($node);
             
             if (!empty(trim($headingText))) {
+                // Track if we've seen an h1
+                if ($level === 1) {
+                    $hasH1 = true;
+                }
+                
+                // If this is h2 and we haven't seen an h1 yet, treat it as h1
+                $adjustedLevel = $level;
+                if ($level === 2 && !$hasH1) {
+                    $adjustedLevel = 1;
+                    // Clear any existing headings since this h2 should be treated as top-level
+                    $currentHeadings = [];
+                }
+                
                 // Update current headings array - ensure no trailing whitespace
-                $currentHeadings[$level - 1] = trim($headingText);
+                $currentHeadings[$adjustedLevel - 1] = trim($headingText);
                 // Remove any deeper headings
-                $currentHeadings = array_slice($currentHeadings, 0, $level);
+                $currentHeadings = array_slice($currentHeadings, 0, $adjustedLevel);
             }
         }
         
@@ -71,7 +86,7 @@ class HtmlChunker
         
         // Recursively process child nodes
         foreach ($node->childNodes as $childNode) {
-            self::traverseNode($childNode, $currentHeadings, $chunks);
+            self::traverseNode($childNode, $currentHeadings, $chunks, $hasH1);
         }
     }
     
