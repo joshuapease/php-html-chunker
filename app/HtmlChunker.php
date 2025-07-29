@@ -52,8 +52,8 @@ class HtmlChunker
             $headingText = self::extractTextContent($node);
             
             if (!empty(trim($headingText))) {
-                // Update current headings array
-                $currentHeadings[$level - 1] = $headingText;
+                // Update current headings array - ensure no trailing whitespace
+                $currentHeadings[$level - 1] = trim($headingText);
                 // Remove any deeper headings
                 $currentHeadings = array_slice($currentHeadings, 0, $level);
             }
@@ -61,7 +61,7 @@ class HtmlChunker
         
         // Handle content elements
         if (self::isContentElement($tagName)) {
-            $content = self::extractTextContent($node);
+            $content = self::extractContent($node, $tagName);
             
             if (!empty(trim($content))) {
                 $chunk = self::buildChunk($currentHeadings, $content);
@@ -128,6 +128,73 @@ class HtmlChunker
     }
     
     /**
+     * Extracts content from a DOM node based on its tag type.
+     * 
+     * @param \DOMNode $node The node to extract content from
+     * @param string $tagName The tag name of the node
+     * @return string The formatted content
+     */
+    private static function extractContent(\DOMNode $node, string $tagName): string
+    {
+        if ($tagName === 'ul') {
+            return self::extractUnorderedList($node);
+        }
+        
+        if ($tagName === 'ol') {
+            return self::extractOrderedList($node);
+        }
+        
+        // Default to text content for other elements
+        return self::extractTextContent($node);
+    }
+    
+    /**
+     * Extracts unordered list items and formats them as markdown.
+     * 
+     * @param \DOMNode $node The ul node
+     * @return string The formatted list
+     */
+    private static function extractUnorderedList(\DOMNode $node): string
+    {
+        $items = [];
+        
+        foreach ($node->childNodes as $childNode) {
+            if ($childNode->nodeType === XML_ELEMENT_NODE && strtolower($childNode->nodeName) === 'li') {
+                $text = self::extractTextContent($childNode);
+                if (!empty(trim($text))) {
+                    $items[] = '- ' . $text;
+                }
+            }
+        }
+        
+        return implode("\\n", $items);
+    }
+    
+    /**
+     * Extracts ordered list items and formats them as markdown.
+     * 
+     * @param \DOMNode $node The ol node
+     * @return string The formatted list
+     */
+    private static function extractOrderedList(\DOMNode $node): string
+    {
+        $items = [];
+        $index = 1;
+        
+        foreach ($node->childNodes as $childNode) {
+            if ($childNode->nodeType === XML_ELEMENT_NODE && strtolower($childNode->nodeName) === 'li') {
+                $text = self::extractTextContent($childNode);
+                if (!empty(trim($text))) {
+                    $items[] = $index . '. ' . $text;
+                    $index++;
+                }
+            }
+        }
+        
+        return implode("\\n", $items);
+    }
+
+    /**
      * Builds a formatted chunk string from headings and content.
      * 
      * @param array $headings Array of headings at each level
@@ -147,6 +214,6 @@ class HtmlChunker
         // Add content
         $parts[] = $content;
         
-        return implode(" \\n ", $parts);
+        return implode("\\n", $parts);
     }
 }

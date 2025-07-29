@@ -17,10 +17,10 @@ HTML;
     $chunks = HtmlChunker::chunk($html);
 
     $result = [
-        '# Hello \n World',
-        '# Hello \n ## Section 1 \n Paragraph 1',
-        '# Hello \n ## Section 1 \n Paragraph 2',
-        '# Hello \n ## Section 2 \n Paragraph 3',
+        '# Hello\nWorld',
+        '# Hello\n## Section 1\nParagraph 1',
+        '# Hello\n## Section 1\nParagraph 2',
+        '# Hello\n## Section 2\nParagraph 3',
     ];
 
     expect($chunks)->toEqual($result);
@@ -41,9 +41,9 @@ HTML;
 
     $chunks = HtmlChunker::chunk($html);
 
-    expect($chunks)->toContain('# Main Title \n ## Section 1 \n ### Subsection 1.1 \n Content 1');
-    expect($chunks)->toContain('# Main Title \n ## Section 1 \n ### Subsection 1.2 \n Content 2');
-    expect($chunks)->toContain('# Main Title \n ## Section 2 \n Content 3');
+    expect($chunks)->toContain('# Main Title\n## Section 1\n### Subsection 1.1\nContent 1');
+    expect($chunks)->toContain('# Main Title\n## Section 1\n### Subsection 1.2\nContent 2');
+    expect($chunks)->toContain('# Main Title\n## Section 2\nContent 3');
 });
 
 test('handles list elements', function () {
@@ -61,8 +61,8 @@ HTML;
 
     $chunks = HtmlChunker::chunk($html);
 
-    expect($chunks)->toContain('# List Example \n Item 1 Item 2');
-    expect($chunks)->toContain('# List Example \n Ordered 1 Ordered 2');
+    expect($chunks)->toContain('# List Example\n- Item 1\n- Item 2');
+    expect($chunks)->toContain('# List Example\n1. Ordered 1\n2. Ordered 2');
 });
 
 test('removes formatting from content', function () {
@@ -73,7 +73,7 @@ HTML;
 
     $chunks = HtmlChunker::chunk($html);
 
-    expect($chunks)->toContain('# Formatted Content \n This is bold and italic text with links.');
+    expect($chunks)->toContain('# Formatted Content\nThis is bold and italic text with links.');
 });
 
 test('ignores empty elements', function () {
@@ -88,5 +88,5 @@ HTML;
     $chunks = HtmlChunker::chunk($html);
 
     expect($chunks)->toHaveCount(1);
-    expect($chunks)->toContain('# Title \n Valid content');
+    expect($chunks)->toContain('# Title\nValid content');
 });
