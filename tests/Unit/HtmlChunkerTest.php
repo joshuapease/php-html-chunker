@@ -88,6 +88,31 @@ HTML;
     ]);
 });
 
+test('more whacky headings', function () {
+    $html = <<<HTML
+<h1>Section 1</h1>
+<p>Content 1</p>
+<p>Content 1.1</p>
+<h3>Section 2</h3>
+<p>Content 2</p>
+<p>Content 2.1</p>
+<h2>Section 3</h2>
+<p>Content 3</p>
+<p>Content 3.1</p>
+HTML;
+
+    $chunks = HtmlChunker::chunk($html);
+
+    expect($chunks)->toEqual([
+        '# Section 1\nContent 1',
+        '# Section 1\nContent 1.1',
+        '# Section 1\n### Section 2\nContent 2',
+        '# Section 1\n### Section 2\nContent 2.1',
+        '# Section 1\n## Section 3\nContent 3',
+        '# Section 1\n## Section 3\nContent 3.1',
+    ]);
+});
+
 
 test('handles list elements', function () {
     $html = <<<HTML

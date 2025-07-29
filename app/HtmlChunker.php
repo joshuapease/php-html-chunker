@@ -19,10 +19,10 @@ class HtmlChunker
         
         $chunks = [];
         $currentHeadings = [];
-        $hasH1 = false;
+        $topLevel = null;
         
         // Traverse the DOM tree
-        self::traverseNode($dom->documentElement, $currentHeadings, $chunks, $hasH1);
+        self::traverseNode($dom->documentElement, $currentHeadings, $chunks, $topLevel);
         
         return $chunks;
     }
@@ -33,9 +33,9 @@ class HtmlChunker
      * @param \DOMNode $node The current DOM node
      * @param array $currentHeadings Array of current headings at each level
      * @param array &$chunks Reference to the chunks array to populate
-     * @param bool $hasH1 Whether we've seen an h1 element
+     * @param int|null $topLevel The highest heading level encountered so far
      */
-    private static function traverseNode(\DOMNode $node, array &$currentHeadings, array &$chunks, bool &$hasH1): void
+    private static function traverseNode(\DOMNode $node, array &$currentHeadings, array &$chunks, ?int &$topLevel): void
     {
         if ($node->nodeType === XML_TEXT_NODE) {
             return; // Skip text nodes, we'll handle them in content elements
@@ -54,23 +54,28 @@ class HtmlChunker
             $headingText = self::extractTextContent($node);
             
             if (!empty(trim($headingText))) {
-                // Track if we've seen an h1
-                if ($level === 1) {
-                    $hasH1 = true;
-                }
-                
-                // If this is h2 and we haven't seen an h1 yet, treat it as h1
-                $adjustedLevel = $level;
-                if ($level === 2 && !$hasH1) {
-                    $adjustedLevel = 1;
-                    // Clear any existing headings since this h2 should be treated as top-level
+                // Track the top-level heading
+                if ($topLevel === null) {
+                    $topLevel = $level;
+                } elseif ($level < $topLevel) {
+                    // If we encounter a higher level heading, update top level and reset
+                    $topLevel = $level;
                     $currentHeadings = [];
+                } elseif ($level === $topLevel) {
+                    // If we encounter a heading at the same level as top level, clear this level and below
+                    $currentHeadings = array_slice($currentHeadings, 0, $level - 1);
                 }
+                // If level > topLevel, we keep the existing headings and add this one
                 
-                // Update current headings array - ensure no trailing whitespace
-                $currentHeadings[$adjustedLevel - 1] = trim($headingText);
-                // Remove any deeper headings
-                $currentHeadings = array_slice($currentHeadings, 0, $adjustedLevel);
+                // Update current headings array using the actual heading level
+                // Ensure the array is large enough to hold this level
+                while (count($currentHeadings) < $level) {
+                    $currentHeadings[] = '';
+                }
+                $currentHeadings[$level - 1] = trim($headingText);
+                
+                // Clear any deeper headings
+                $currentHeadings = array_slice($currentHeadings, 0, $level);
             }
         }
         
@@ -86,7 +91,7 @@ class HtmlChunker
         
         // Recursively process child nodes
         foreach ($node->childNodes as $childNode) {
-            self::traverseNode($childNode, $currentHeadings, $chunks, $hasH1);
+            self::traverseNode($childNode, $currentHeadings, $chunks, $topLevel);
         }
     }
     
@@ -220,10 +225,12 @@ class HtmlChunker
     {
         $parts = [];
         
-        // Add headings with markdown formatting
+        // Add headings with markdown formatting (filter out empty headings)
         foreach ($headings as $level => $heading) {
-            $markdown = str_repeat('#', $level + 1) . ' ' . $heading;
-            $parts[] = $markdown;
+            if (!empty(trim($heading))) {
+                $markdown = str_repeat('#', $level + 1) . ' ' . $heading;
+                $parts[] = $markdown;
+            }
         }
         
         // Add content
