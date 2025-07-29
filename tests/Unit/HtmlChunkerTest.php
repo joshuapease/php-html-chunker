@@ -90,6 +90,7 @@ HTML;
 
 test('more whacky headings', function () {
     $html = <<<HTML
+<p>Paragraph without a preceding heading</p>
 <h1>Section 1</h1>
 <p>Content 1</p>
 <p>Content 1.1</p>
@@ -104,6 +105,7 @@ HTML;
     $chunks = HtmlChunker::chunk($html);
 
     expect($chunks)->toEqual([
+        'Paragraph without a preceding heading',
         '# Section 1\nContent 1',
         '# Section 1\nContent 1.1',
         '# Section 1\n### Section 2\nContent 2',
