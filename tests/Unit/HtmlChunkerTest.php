@@ -61,12 +61,33 @@ HTML;
     $chunks = HtmlChunker::chunk($html);
 
     expect($chunks)->toEqual([
-        '# Section 1\nContent 1',
-        '# Section 1\nContent 1.1',
-        '# Section 2\nContent 2',
-        '# Section 2\nContent 2.1',
+        '## Section 1\nContent 1',
+        '## Section 1\nContent 1.1',
+        '## Section 2\nContent 2',
+        '## Section 2\nContent 2.1',
     ]);
 });
+
+test('gracefully any number of missing levels', function () {
+    $html = <<<HTML
+<h3>Section 1</h3>
+<p>Content 1</p>
+<p>Content 1.1</p>
+<h2>Section 2</h2>
+<p>Content 2</p>
+<p>Content 2.1</p>
+HTML;
+
+    $chunks = HtmlChunker::chunk($html);
+
+    expect($chunks)->toEqual([
+        '### Section 1\nContent 1',
+        '### Section 1\nContent 1.1',
+        '## Section 2\nContent 2',
+        '## Section 2\nContent 2.1',
+    ]);
+});
+
 
 test('handles list elements', function () {
     $html = <<<HTML
