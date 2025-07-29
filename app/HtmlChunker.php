@@ -46,8 +46,9 @@ class HtmlChunker
         $tagName = strtolower($node->nodeName);
         
         // Handle headings
-        if (preg_match('/^h([1-6])$/', $tagName, $matches)) {
-            $level = (int)$matches[1];
+        $level = self::getHeadingLevel($tagName);
+
+        if ($level !== null) {
             $headingText = self::extractTextContent($node);
             
             if (!empty(trim($headingText))) {
@@ -85,6 +86,21 @@ class HtmlChunker
         // Current implementation: p, ul, ol
         // TODO: Could be expanded to include: div, section, article, aside, main, etc.
         return in_array($tagName, ['p', 'ul', 'ol']);
+    }
+
+    /**
+     * Gets the heading level from a tag name, or null if not a heading.
+     * 
+     * @param string $tagName The tag name to check
+     * @return int|null The heading level (1-6) or null if not a heading
+     */
+    private static function getHeadingLevel(string $tagName): ?int
+    {
+        if (preg_match('/^h([1-6])$/', $tagName, $matches)) {
+            return (int)$matches[1];
+        }
+        
+        return null;
     }
     
     /**
