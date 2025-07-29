@@ -41,9 +41,31 @@ HTML;
 
     $chunks = HtmlChunker::chunk($html);
 
-    expect($chunks)->toContain('# Main Title\n## Section 1\n### Subsection 1.1\nContent 1');
-    expect($chunks)->toContain('# Main Title\n## Section 1\n### Subsection 1.2\nContent 2');
-    expect($chunks)->toContain('# Main Title\n## Section 2\nContent 3');
+    expect($chunks)->toEqual([
+        '# Main Title\n## Section 1\n### Subsection 1.1\nContent 1',
+        '# Main Title\n## Section 1\n### Subsection 1.2\nContent 2',
+        '# Main Title\n## Section 2\nContent 3',
+    ]);
+});
+
+test('gracefully handles missing h1', function () {
+    $html = <<<HTML
+<h2>Section 1</h2>
+<p>Content 1</p>
+<p>Content 1.1</p>
+<h2>Section 2</h2>
+<p>Content 2</p>
+<p>Content 2.1</p>
+HTML;
+
+    $chunks = HtmlChunker::chunk($html);
+
+    expect($chunks)->toEqual([
+        '# Section 1\nContent 1',
+        '# Section 1\nContent 1.1',
+        '# Section 2\nContent 2',
+        '# Section 2\nContent 2.1',
+    ]);
 });
 
 test('handles list elements', function () {
@@ -61,8 +83,10 @@ HTML;
 
     $chunks = HtmlChunker::chunk($html);
 
-    expect($chunks)->toContain('# List Example\n- Item 1\n- Item 2');
-    expect($chunks)->toContain('# List Example\n1. Ordered 1\n2. Ordered 2');
+    expect($chunks)->toEqual([
+        '# List Example\n- Item 1\n- Item 2',
+        '# List Example\n1. Ordered 1\n2. Ordered 2',
+    ]);
 });
 
 test('removes formatting from content', function () {
@@ -87,6 +111,7 @@ HTML;
 
     $chunks = HtmlChunker::chunk($html);
 
-    expect($chunks)->toHaveCount(1);
-    expect($chunks)->toContain('# Title\nValid content');
+    expect($chunks)->toEqual([
+        '# Title\nValid content',
+    ]);
 });
